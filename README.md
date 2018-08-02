@@ -1,7 +1,7 @@
-# Delphi-Specials
-Delphi units providing an interface to 
-- Windows Task Scheduler 2.0
-- Windows Volume Shadow Service
-
-Delphi units for
-- Long integer arithmetic
+# Delphi Interface to Windows Volume Shadow Service
+The units provides functions and objects to use Windows VSS in a Delphi program
+Object:
+- TVolumeShadowCopy
+- TVssThread
+Functions:
+- CreateVssThread
