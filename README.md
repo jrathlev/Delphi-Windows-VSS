@@ -5,7 +5,7 @@ Software Development Kit for Windows 7. As an example, you can find there a
 program (*VSHADOW.EXE*) and the appropriate source code. This, as well as the 
 required interfaces (header files) to the system libraries, is however written 
 in C++. To use VSS under Delphi, it is first necessary to convert the header 
-files into a Delphi unit (**VssApi.pas** in the provided source package). A second 
+files into a Delphi unit (file **VssApi.pas**). A second 
 unit (**VssUtils.pas**) contains all routines from the Microsoft sample program 
 converted to Delphi. To facilitate the integration into user written programs, 
 all functions are bundled to a class (**TVolumeShadowCopy**). For execution in an 
