@@ -10,9 +10,8 @@ unit (**VssUtils.pas**) contains all routines from the Microsoft sample program
 converted to Delphi. To facilitate the integration into user written programs, 
 all functions are bundled to a class (**TVolumeShadowCopy**). For execution in an 
 own thread, another class (**TVssThread**) is provided. A sample snippet how 
-integrate this into a user program can be found in the readme.txt file which 
-is part of the source package. 
-Additionally, a console application example is provided (**VsToolkit**). This 
+integrate this into a user program can be found in the howto.txt file. 
+Additionally, a console application example is provided (**VsToolkit.dpr**). This 
 application is not based on the original Microsoft SDK sample, but on the modified version 
 [Volume Shadow Copy Simple Client (VSCSC)](http://sourceforge.net/projects/vscsc). All 
 programs and routines can be compiled for 32- and 64-bit systems (the latter 
