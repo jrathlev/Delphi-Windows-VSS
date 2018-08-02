@@ -1,0 +1,126 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# 
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2017-11-05 17:18\n"
+"PO-Revision-Date: 2017-11-05 17:18\n"
+"Last-Translator: Somebody <your.email@address.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: dxgettext 2.5.1\n"
+
+#. Programmer's name for it: rsVssNotAvail
+#: VssConsts.pas:24
+msgid "Volume Shadow Copy could not be initialized on this "
+"system!"
+msgstr ""
+
+#. Programmer's name for it: rsInitBackupComps
+#: VssConsts.pas:25
+msgid "Initializing IVssBackupComponents Interface "
+"..."
+msgstr ""
+
+#. Programmer's name for it: rsInitMetaData
+#: VssConsts.pas:26
+msgid "Initialize writer metadata ..."
+msgstr ""
+
+#. Programmer's name for it: rsGatherMetaData
+#: VssConsts.pas:27
+msgid "Gathering writer metadata ..."
+msgstr ""
+
+#. Programmer's name for it: rsGatherWriterStatus
+#: VssConsts.pas:28
+msgid "Gathering writer status ..."
+msgstr ""
+
+#. Programmer's name for it: rsDscvDirExclComps
+#: VssConsts.pas:29
+msgid "Discover directly excluded components "
+"..."
+msgstr ""
+
+#. Programmer's name for it: rsDscvNsExclComps
+#: VssConsts.pas:30
+msgid "Discover components that reside outside the shadow set "
+"..."
+msgstr ""
+
+#. Programmer's name for it: rsDscvAllExclComps
+#: VssConsts.pas:31
+msgid "Discover all excluded components ..."
+msgstr ""
+
+#. Programmer's name for it: rsDscvExclWriters
+#: VssConsts.pas:32
+msgid "Discover excluded writers ..."
+msgstr ""
+
+#. Programmer's name for it: rsDscvExpInclComps
+#: VssConsts.pas:33
+msgid "Discover explicitly included components "
+"..."
+msgstr ""
+
+#. Programmer's name for it: rsSelExpInclComps
+#: VssConsts.pas:34
+msgid "Select explicitly included components "
+"..."
+msgstr ""
+
+#. Programmer's name for it: rsSaveBackCompsDoc
+#: VssConsts.pas:35
+msgid "Saving the backup components document "
+"..."
+msgstr ""
+
+#. Programmer's name for it: rsAddVolSnapSet
+#: VssConsts.pas:36
+msgid "Add volumes to snapshot set ..."
+msgstr ""
+
+#. Programmer's name for it: rsPrepBackup
+#: VssConsts.pas:37
+msgid "Preparing for backup ..."
+msgstr ""
+
+#. Programmer's name for it: rsCreateShadowCopy
+#: VssConsts.pas:38
+msgid "Creating the shadow copy ..."
+msgstr ""
+
+#. Programmer's name for it: rsCreateCopySuccess
+#: VssConsts.pas:39
+msgid "Shadow copy set successfully created"
+msgstr ""
+
+#. Programmer's name for it: rsQueryShadowCopies
+#: VssConsts.pas:40
+msgid "Querying all shadow copies in the system "
+"..."
+msgstr ""
+
+#. Programmer's name for it: rsQuerySnapshotSetID
+#: VssConsts.pas:41
+msgid "Querying all shadow copies with the SnapshotSetID %s "
+"..."
+msgstr ""
+
+#. Programmer's name for it: rsCreateShadowSet
+#: VssConsts.pas:42
+msgid "Creating shadow set {%s} ..."
+msgstr ""
+
+#. Programmer's name for it: rsCompleteBackup
+#: VssConsts.pas:43
+msgid "Completing the backup ..."
+msgstr ""
+

@@ -1,0 +1,60 @@
+Volume Shadow Copy Toolkit
+==========================
+
+(c) 2015 - 2017, J. Rathlev, 24222 Schwentinental, Germany
+Revision history:
+
+2.3.2  (2017-12-28)
+-----
+  - Bug fixes:
+    - Reading a GUID from command line
+
+2.3.1  (2017-08-16)
+-----
+  - Changes:
+    - Target platform (32- or 64-bit) is displayed in the welcome message and
+      in Explorer - Properties - Details
+
+2.3.0  (2017-07-08)
+-----
+  - Bug fixes:
+    - DiscoverDirectlyExcludedComponents
+    - GetDisplayNameForVolume
+
+2.2  (2017-06-01)
+---
+  - Changes:
+    - Log output in VssUtils without localization
+  - Fixes:
+    - Output for XML Backup Components Document
+    - Missing SetContext added
+
+2.1  (2016-01-06)
+---
+  - Bug fixes:
+    - Duplicate "BackupComplete" when calling the external program gave an error
+    - "CoInitializeSecurity" removed from TVolumeShadowCopy.Initialize, must
+      be called prior to initializing the VSS thread and only once per process
+      (fixes an error under Windows 10)
+    - New compilation to fix some wrong version notifications
+
+2.0  (2015-03-20)
+---
+  - New:
+    - Call IsVssAvailable to check if system supports all needed functions
+      (Windows 7 and above)
+  - Changes:
+    - Dynamic loading of "CreateVssBackupComponents" and "VssFreeSnapshotProperties"
+      to prevent from exception loading them from VssApi.dll on Windows XP
+
+1.1  (2015-02-23)
+---
+  - New:
+    - Multilanguage support using GnuGettext for Delphi
+    - Separate language files for English and German
+  - Fixes:
+    - Call to VssBackupComponents.SaveAsXML fixed
+
+1.0  (2014-11-14)
+----
+  - Basic version

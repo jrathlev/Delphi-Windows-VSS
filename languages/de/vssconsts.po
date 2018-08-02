@@ -1,0 +1,121 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Volume Shadow Copy Service\n"
+"POT-Creation-Date: 2017-11-05 17:18\n"
+"PO-Revision-Date: 2017-11-05 17:21+0100\n"
+"Last-Translator: J. Rathlev <kontakt@rathlev-home.de>\n"
+"Language-Team: J. Rathlev <kontakt@rathlev-home.de>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.0.4\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Programmer's name for it: rsVssNotAvail
+#: VssConsts.pas:24
+msgid "Volume Shadow Copy could not be initialized on this system!"
+msgstr ""
+"Die Volumen-Schattenkopie konnte auf diesem System nicht initialisiert "
+"werden!"
+
+#. Programmer's name for it: rsInitBackupComps
+#: VssConsts.pas:25
+msgid "Initializing IVssBackupComponents Interface ..."
+msgstr "Das IVssBackupComponents-Interface wird initialisiert ..."
+
+#. Programmer's name for it: rsInitMetaData
+#: VssConsts.pas:26
+msgid "Initialize writer metadata ..."
+msgstr "Writer-Metadaten werden initialisiert ..."
+
+#. Programmer's name for it: rsGatherMetaData
+#: VssConsts.pas:27
+msgid "Gathering writer metadata ..."
+msgstr "Writer-Metadaten werden erfasst ..."
+
+#. Programmer's name for it: rsGatherWriterStatus
+#: VssConsts.pas:28
+msgid "Gathering writer status ..."
+msgstr "Status der Writer wird erfasst ..."
+
+#. Programmer's name for it: rsDscvDirExclComps
+#: VssConsts.pas:29
+msgid "Discover directly excluded components ..."
+msgstr "Direkt auszuschließende Komponenten werden ermittelt ..."
+
+#. Programmer's name for it: rsDscvNsExclComps
+#: VssConsts.pas:30
+msgid "Discover components that reside outside the shadow set ..."
+msgstr ""
+"Komponenten, die nicht zum Schattenkopiesatz gehören, werden ermittelt ..."
+
+#. Programmer's name for it: rsDscvAllExclComps
+#: VssConsts.pas:31
+msgid "Discover all excluded components ..."
+msgstr "Die ausgeschlossenen Komponenten werden ermittelt ..."
+
+#. Programmer's name for it: rsDscvExclWriters
+#: VssConsts.pas:32
+msgid "Discover excluded writers ..."
+msgstr "Ausgeschlossene Writer werden ermittelt ..."
+
+#. Programmer's name for it: rsDscvExpInclComps
+#: VssConsts.pas:33
+msgid "Discover explicitly included components ..."
+msgstr "Ausdrücklich einzuschließende Komponenten werden ermittelt ..."
+
+#. Programmer's name for it: rsSelExpInclComps
+#: VssConsts.pas:34
+msgid "Select explicitly included components ..."
+msgstr "Ausdrücklich einzuschließende Komponenten auswählen ..."
+
+#. Programmer's name for it: rsSaveBackCompsDoc
+#: VssConsts.pas:35
+msgid "Saving the backup components document ..."
+msgstr "Das Backupkomponenten-Dokument wird gespeichert ..."
+
+#. Programmer's name for it: rsAddVolSnapSet
+#: VssConsts.pas:36
+msgid "Add volumes to snapshot set ..."
+msgstr "Dem Snapshotsatz werden Datenträger hinzugefügt ..."
+
+#. Programmer's name for it: rsPrepBackup
+#: VssConsts.pas:37
+msgid "Preparing for backup ..."
+msgstr "Das Backup wird vorbereitet ..."
+
+#. Programmer's name for it: rsCreateShadowCopy
+#: VssConsts.pas:38
+msgid "Creating the shadow copy ..."
+msgstr "Die Schattenkopie wird erstellt ..."
+
+#. Programmer's name for it: rsCreateCopySuccess
+#: VssConsts.pas:39
+msgid "Shadow copy set successfully created"
+msgstr "Der Schattenkopiesatz wurde erfolgreich erstellt"
+
+#. Programmer's name for it: rsQueryShadowCopies
+#: VssConsts.pas:40
+msgid "Querying all shadow copies in the system ..."
+msgstr "Alle Schattenkopien im System werden abgefragt ..."
+
+#. Programmer's name for it: rsQuerySnapshotSetID
+#: VssConsts.pas:41
+msgid "Querying all shadow copies with the SnapshotSetID %s ..."
+msgstr "Alle Schattenkopien mit dem SnapshotSetID %s werden abgefragt ..."
+
+#. Programmer's name for it: rsCreateShadowSet
+#: VssConsts.pas:42
+msgid "Creating shadow set {%s} ..."
+msgstr "Ein Schattenkopiesatz {%s} wird erstellt ..."
+
+#. Programmer's name for it: rsCompleteBackup
+#: VssConsts.pas:43
+msgid "Completing the backup ..."
+msgstr "Das Backup wird abgeschlossen ..."

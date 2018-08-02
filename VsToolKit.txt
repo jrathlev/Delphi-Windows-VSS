@@ -1,0 +1,44 @@
+﻿
+VsToolkit V 2.2 - Volume Shadow Toolkit for Windows 7
+This is a modified Delphi version of the Volume Shadow Copy Simple Client
+by Microsoft (VSHADOW.EXE), originally bundled with the Microsoft SDK 7
+for Windows Vista and Windows 7/8/10.
+
+Usage:
+   VsToolkit [optional flags] [commands]
+
+List of optional flags:
+  -?                 - Displays the usage screen
+  -wi={Writer Name}  - Verify that a writer/component is included
+  -wx={Writer Name}  - Exclude a writer/component from set creation or restore
+  -exec={command}    - Custom command executed after shadow creation.
+                       The command is invoked and the name of the new temporary
+                       shadow volume is passed as first parameter.
+  -wait              - Wait before program termination 
+
+List of commands:
+  {one volume}       - Creates a temporary shadow set on this volume
+                       (JUST ONE VOLUME AT A TIME!!!)
+  -ws                - List writer status
+  -wm                - List writer summary metadata
+  -wm2               - List writer detailed metadata
+  -q                 - List all shadow copies in the system
+  -qx={SnapSetID}    - List all shadow copies in this set
+  -qs={SnapID}       - List the shadow copy with the given ID
+  -da                - Deletes all shadow copies in the system
+  -dx={SnapSetID}    - Deletes all shadow copies in this set
+  -ds={SnapID}       - Deletes this shadow copy
+  -log={filename}    - Write to log file
+
+Examples:
+
+ - Non-persistent shadow copy creation on C:
+     VsToolkit C: 
+
+ - List all shadow copies in the system:
+     VsToolkit -q
+
+ - Create snapshot and start batch script to run backup 
+     VsToolkit -exec=backup.bat C:
+     
+(c) May 2017, Dr. J. Rathlev, 24222 Schwentinental, Germany
