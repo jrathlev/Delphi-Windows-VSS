@@ -1,4 +1,4 @@
-### Delphi Interface to Windows Volume Shadow Service (VSS)
+### Delphi Interface to Windows Volume Shadow Copy Service (VSS)
 
 The use of Volume Shadow Copies is described in detail in the Microsoft 
 Software Development Kit for Windows 7. As an example, you can find there a 
