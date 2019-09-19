@@ -30,10 +30,10 @@ interface
 
 uses
   System.SysUtils, System.Classes, System.Win.ComObj, System.Contnrs,
-  Winapi.Windows, Winapi.ActiveX, WinApiUtils, VssApi;
+  Winapi.Windows, Winapi.ActiveX, VssApi;
 
 const
-  defLogFile : string = 'VssUtils.log';
+  defVssLogFile : string = 'VssUtils.log';
   XmlSize = 512*1024;
 
 type
@@ -289,7 +289,7 @@ function CreateVssThread (const ADrive : string; IgnoreTooLate : boolean = false
 { ---------------------------------------------------------------- }
 implementation
 
-uses System.StrUtils, VssConsts;
+uses System.StrUtils, VssConsts, WinDevUtils, WinApiUtils;
 
 const
   cpUtf8 = 65001;
@@ -1062,7 +1062,7 @@ begin
   VssContext:=VSS_CTX_BACKUP;
   LatestSnapshotSetID:=GUID_NULL;
   DuringRestore:=false;
-  LogFileName:=SetPathDelimiter(TempDirectory)+defLogFile;
+  LogFileName:=SetPathDelimiter(TempDirectory)+defVssLogFile;
   fWriteLog:=false;
   WriterList:=TObjectList.Create;
   fShowStatus:=nil;

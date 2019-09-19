@@ -23,7 +23,7 @@
    Vers. 6 - July 2013 : more environment folders
    Vers. 7 - Dec. 2015 : Modifications for Delphi 10 (all functions and constants
                          removed that are now handled in Winapi.Windows)
-   last modified:  May 2017
+   last modified:  March 2019
    *)
 
 unit WinApiUtils;
@@ -188,14 +188,6 @@ const
   NameSamCompatible            = 2;    // from secur32.dll
 
 type
-  TLongWord = record
-    case integer of
-    0 : (LongWord : cardinal);
-    1 : (Lo,Hi : word);
-    2 : (LoL,LoH,HiL,HiH : byte);
-    3 : (Bytes : array [0..3] of Byte);
-    end;
-
   TLuidArray = array of TLuid;
   USHORT = word;
 
@@ -207,7 +199,7 @@ type
   LSA_UNICODE_STRING = _LSA_UNICODE_STRING;
 
   _SECURITY_LOGON_TYPE = (
-    seltFiller0, seltFiller1,
+    seltError, seltFiller1,
     Interactive,
     Network,
     Batch,
@@ -329,6 +321,8 @@ type
   TFindNextStream = function (hFindStream : THandle;
     var lpFindStreamData : TWin32FindStreamData) : BOOL; stdcall;
 
+  TGetTickCount64 = function : ULONGLONG; stdcall;
+
   TSetSuspendState = function (Hibernate, ForceCritical, DisableWakeEvent: BOOL) : BOOL; stdcall;
 
   TCreateProcessWithLogonW = function(lpUsername: PWideChar;
@@ -357,27 +351,6 @@ type
     Company,Description,Version,InternalName,Copyright,Comments : string;
     end;
 
-  TFileSystemFlag =
-   (
-    fsCaseSensitive,            // The file system supports case-sensitive file names.
-    fsCasePreservedNames,       // The file system preserves the case of file names when it places a name on disk.
-    fsSupportsUnicodeOnDisk,    // The file system supports Unicode in file names as they appear on disk.
-    fsPersistentACLs,           // The file system preserves and enforces ACLs. For example, NTFS preserves and enforces ACLs, and FAT does not.
-    fsSupportsFileCompression,  // The file system supports file-based compression.
-    fsSupportsVolumeQuotas,     // The file system supports disk quotas.
-    fsSupportsSparseFiles,      // The file system supports sparse files.
-    fsSupportsReparsePoints,    // The file system supports reparse points.
-    fsSupportsRemoteStorage,    // ?
-    fsVolumeIsCompressed,       // The specified volume is a compressed volume; for example, a DoubleSpace volume.
-    fsSupportsObjectIds,        // The file system supports object identifiers.
-    fsSupportsEncryption,       // The file system supports the Encrypted File System (EFS).
-    fsSupportsNamedStreams,     // The file system supports named streams.
-    fsVolumeIsReadOnly          // The specified volume is read-only.
-                                //   Windows 2000/NT and Windows Me/98/95:  This value is not supported.
-   );
-
-  TFileSystemFlags = set of TFileSystemFlag;
-
   TSessionData = record
     UserLuid  : TLUID;
     UserName,
@@ -388,13 +361,10 @@ type
   TSessionList = array of TSessionData;
 
 
-function GetTickCount64: ULONGLONG; stdcall;
-{$EXTERNALSYM GetTickCount64}
+//{$EXTERNALSYM GetTickCount64}
+//function GetTickCount64: ULONGLONG; stdcall;
 
 { ---------------------------------------------------------------- }
-{$EXTERNALSYM SetSuspendState}
-function SetSuspendState(Hibernate, ForceCritical, DisableWakeEvent: Boolean): Boolean;
-
 {$EXTERNALSYM GetFileSizeEx}
 function GetFileSizeEx(hFile: THandle; lpFileSize : Large_Integer): BOOL; stdcall;
 
@@ -422,42 +392,17 @@ function InitiateSystemShutdownExW(lpMachineName, lpMessage: LPWSTR;
 function LsaNtStatusToWinError(Status: cardinal): ULONG; stdcall;
 
 { ---------------------------------------------------------------- }
-// The following definitions are erroneous in Winapi.Windows (Delphi 10):
-// LPCWSTR/LPWSTR should be used instead of LPCSTR/LPSTR
-{$EXTERNALSYM GetVolumePathName}
-function GetVolumePathName(lpszFileName: LPCWSTR; lpszVolumePathName: LPWSTR;
-         cchBufferLength: DWORD): BOOL; stdcall;
-
-{$EXTERNALSYM GetVolumePathNamesForVolumeName}
-function GetVolumePathNamesForVolumeName(lpszVolumeName: LPCWSTR; lpszVolumePathNames: LPWSTR;
-         cchBufferLength: DWORD; var lpcchReturnLength: DWORD): BOOL; stdcall;
-
-{$EXTERNALSYM GetVolumeNameForVolumeMountPoint}
-function GetVolumeNameForVolumeMountPoint (lpszVolumeMountPoint : LPCWSTR;
-  lpszVolumeName : LPWSTR; cchBufferLength : DWORD) : BOOL; stdcall;
-
-{$EXTERNALSYM FindFirstVolume}
-function FindFirstVolume(lpszVolumeName: LPWSTR; cchBufferLength: DWORD): THandle; stdcall;
-
-{$EXTERNALSYM FindNextVolume}
-function FindNextVolume(hFindVolume: THandle; lpszVolumeName: LPWSTR;
-  cchBufferLength: DWORD): BOOL; stdcall;
-
-{$EXTERNALSYM FindFirstVolumeMountPoint}
-function FindFirstVolumeMountPoint(lpszRootPathName: LPCWSTR;
-  lpszVolumeMountPoint: LPWSTR; cchBufferLength: DWORD): THandle; stdcall;
-
-{$EXTERNALSYM FindNextVolumeMountPoint}
-function FindNextVolumeMountPoint(hFindVolumeMountPoint: THandle;
-  lpszVolumeMountPoint: LPWSTR; cchBufferLength: DWORD): BOOL; stdcall;
-
-{ ---------------------------------------------------------------- }
+// available since Win 2000
 function CreateProcessWithLogonW(lpUsername: PWideChar;
   lpDomain: PWideChar; lpPassword: PWideChar; dwLogonFlags: DWORD;
   lpApplicationName: PWideChar; lpCommandLine: PWideChar;
   dwCreationFlags: DWORD; lpEnvironment: Pointer;
   lpCurrentDirectory: PWideChar; const lpStartupInfo: TStartupInfoW;
-  var lpProcessInformation: TProcessInformation): BOOL; stdcall;
+  var lpProcessInformation: TProcessInformation): BOOL;
+
+{ ---------------------------------------------------------------- }
+// available since Win 2000
+function SetSuspendState(Hibernate, ForceCritical, DisableWakeEvent: Boolean): Boolean;
 
 { ---------------------------------------------------------------- }
 // alternate file streams
@@ -467,8 +412,17 @@ function FileFindFirstStream (const FileName : string;
 function FileFindNextStream (var FindStream : TWin32FindStream) : cardinal;
 
 { ---------------------------------------------------------------- }
+// availble since Vista
+function GetTickCount64 : ULONGLONG;
+
+{ ---------------------------------------------------------------- }
 // Ermitteln des sprachabhängigen Namens eines Kontos
 function GetAccountName(sSID : string) : string;
+
+{ ---------------------------------------------------------------- }
+(* Disk size and free space *)
+function GetDiskFree (const Path : string) : int64;
+function GetDiskTotal (const Path : string) : int64;
 
 { ---------------------------------------------------------------- }
 (* Windows-System-Info (Plattform, Version, Build) *)
@@ -478,30 +432,13 @@ function IsVista : boolean;
 function IsWindows64 : boolean;
 function Is64BitApp : boolean;
 
-function GetVolumeName(const Drive: string): string;
-function GetVolumeSerialNumber(const Drive: string): string;
-function GetVolumeFileSystem(const Drive: string): string;
-function GetVolumeComponentLength(const Drive: string): string;
-function IsNtfs (const Drive : string) : boolean;
-function IsExFat (const Drive : string) : boolean;
-function IsLtfs (const Drive : string) : boolean;
-function IsExtFs (const Drive : string) : boolean; // file systems capable to keep files > 4GB
-
-function GetVolumeFileSystemFlags(const Volume: string): TFileSystemFlags;
-function GetVolumeUniqueName(const Drive : string) : string;
-
-{ ---------------------------------------------------------------- }
-(* Disk size and free space *)
-
-function GetDiskFree (const Path : string) : int64;
-function GetDiskTotal (const Path : string) : int64;
-
 { ---------------------------------------------------------------- }
 (* Windows-Verzeichnisse *)
 function WindowsDirectory : string;
 function SystemDirectory : string;
 function TempDirectory : string;
 function PublicFolder : string;
+
 (* Systeminformationen *)
 function UserName : string;
 function UserFullName : string;
@@ -512,7 +449,7 @@ function ComputerName : string;
 { ---------------------------------------------------------------- }
 // nachfolgende Funktionen sind nur ab Vista verfügbar
 // dort erforderlich, um bei WM_QUERYENDSESSION das Abmelden/Herunterfahren zu unterbrechen
-function SetShutDownReason (fHandle: hWnd; Reason : string) : boolean;
+function SetShutDownReason (fHandle: hWnd; const Reason : string) : boolean;
 function ClearShutDownReason (fHandle: hWnd) : boolean;
 function QueryShutDownReason (fHandle: hWnd; var Reason : string) : boolean;
 
@@ -559,9 +496,12 @@ function GetLUIDsFromProcesses(ExcludeProcess : dword; var SessionLuidList : TLu
 function GetUserSessionData (var SessionData : TSessionData) : boolean;
 function GetUserLogonTime : TDateTime;
 function GetUserSidString : string;
+function GetUserLogonType (const Username : string) : TSecurityLogonType;
 
 // Get elevation status of user
 function IsElevatedUser : boolean;
+function IsInteractiveUser (const Username : string) : boolean;
+function IsBatchUser (const Username : string) : boolean;
 
 // Enumerate Logon Sessions (exclude all stale logon sessions)
 function GetInteractiveUserSessions (var UserSessions : TSessionList) : boolean;
@@ -591,18 +531,11 @@ var
   FSetSuspendState : TSetSuspendState;                 // erst ab Win 2000
   FFindFirstStream : TFindFirstStream;                 // erst ab Vista
   FFindNextStream : TFindNextStream;                   // erst ab Vista
+  FGetTickCount64 : TGetTickCount64;
 
 { ---------------------------------------------------------------- }
 function GetFileSizeEx; external kernel32 name 'GetFileSizeEx';
-function GetTickCount64; external kernel32 name 'GetTickCount64';
-
-function GetVolumePathName; external kernel32 name 'GetVolumePathNameW';
-function GetVolumePathNamesForVolumeName; external kernel32 name 'GetVolumePathNamesForVolumeNameW';
-function GetVolumeNameForVolumeMountPoint; external kernel32 name 'GetVolumeNameForVolumeMountPointW';
-function FindFirstVolume; external kernel32 name 'FindFirstVolumeW';
-function FindNextVolume; external kernel32 name 'FindNextVolumeW';
-function FindFirstVolumeMountPoint; external kernel32 name 'FindFirstVolumeMountPointW';
-function FindNextVolumeMountPoint; external kernel32 name 'FindNextVolumeMountPointW';
+// function GetTickCount64; external kernel32 name 'GetTickCount64';
 
 function ConvertStringSidToSid; external advapi32 name 'ConvertStringSidToSidA';
 function ConvertSidToStringSid; external advapi32 name 'ConvertSidToStringSidA';
@@ -655,6 +588,14 @@ begin
   end;
 
 { ---------------------------------------------------------------- }
+// availble since Vista
+function GetTickCount64 : ULONGLONG;
+begin
+  if assigned(@FGetTickCount64) then Result:=FGetTickCount64
+  else Result:=GetTickCount;
+  end;
+
+{ ---------------------------------------------------------------- }
 function SetSuspendState(Hibernate, ForceCritical, DisableWakeEvent: Boolean): Boolean;
 begin
   if assigned(@FSetSuspendState) then Result:=FSetSuspendState(Hibernate,ForceCritical,DisableWakeEvent)
@@ -684,7 +625,7 @@ type
 
 // nachfolgende Funktionen sind nur ab Vista verfügbar
 // dort erforderlich, um bei WM_QUERYENDSESSION das Abmelden/Herunterfahren zu unterbrechen
-function SetShutDownReason (fHandle: hWnd; Reason : string) : boolean;
+function SetShutDownReason (fHandle: hWnd; const Reason : string) : boolean;
 var
   dh  : THandle;
   sdc : TSDBlockReasonCreate;
@@ -768,144 +709,7 @@ begin
   end;
 
 { ---------------------------------------------------------------- }
-{ ------------------------------------------------------------------- }
-// following part from JclSysInfo (Project JEDI Code Library)
-type
-  TVolumeInfoKind = (vikName, vikSerial, vikFileSystem, vikComponentLength);
-
-function GetVolumeInfoHelper(const Drive: string; InfoKind: TVolumeInfoKind): string;
-var
-  VolumeSerialNumber: DWORD;
-  MaximumComponentLength: DWORD;
-  Flags: DWORD;
-  Name: array [0..MAX_PATH] of Char;
-  FileSystem: array [0..15] of Char;
-  ErrorMode: Cardinal;
-  DriveStr: string;
-begin
-  { TODO : Change to RootPath }
-  { TODO : Perform better checking of Drive param or document that no checking
-    is performed. RM Suggested:
-    DriveStr := Drive;
-    if (Length(Drive) < 2) or (Drive[2] <> ':') then
-      DriveStr := GetCurrentFolder;
-    DriveStr  := DriveStr[1] + ':\'; }
-  Result:='';
-  if length(Drive)=0 then Exit;
-  if pos(':',Drive)=0 then DriveStr:=Drive + ':'
-  else DriveStr:=Drive;
-  DriveStr:=IncludeTrailingPathDelimiter(DriveStr);
-  ErrorMode:=SetErrorMode(SEM_FAILCRITICALERRORS);
-  try
-    if GetVolumeInformation(PChar(DriveStr), Name, SizeOf(Name), @VolumeSerialNumber,
-      MaximumComponentLength, Flags, FileSystem, SizeOf(FileSystem)) then
-    case InfoKind of
-      vikName:
-        Result:=StrPas(Name);
-      vikSerial:
-        begin
-          Result:=IntToHex(HiWord(VolumeSerialNumber), 4) + '-' +
-          IntToHex(LoWord(VolumeSerialNumber), 4);
-        end;
-      vikFileSystem:
-        Result:=StrPas(FileSystem);
-      vikComponentLength:
-        Result:=IntToStr(MaximumComponentLength);
-    end;
-  finally
-    SetErrorMode(ErrorMode);
-  end;
-end;
-
-function GetVolumeName(const Drive: string): string;
-begin
-  Result:=GetVolumeInfoHelper(Drive, vikName);
-end;
-
-function GetVolumeSerialNumber(const Drive: string): string;
-begin
-  Result:=GetVolumeInfoHelper(Drive, vikSerial);
-end;
-
-function GetVolumeFileSystem(const Drive: string): string;
-begin
-  Result:=GetVolumeInfoHelper(Drive, vikFileSystem);
-end;
-
-function GetVolumeComponentLength(const Drive: string): string;
-begin
-  Result:=GetVolumeInfoHelper(Drive, vikComponentLength);
-end;
-
-function IsNtfs (const Drive : string) : boolean;
-begin
-  Result:=AnsiSameText('NTFS',GetVolumeFileSystem(Drive));
-  end;
-
-function IsExFat (const Drive : string) : boolean;
-begin
-  Result:=AnsiSameText('exFAT',GetVolumeFileSystem(Drive));
-  end;
-
-function IsLtfs (const Drive : string) : boolean;
-begin
-  Result:=AnsiSameText('LTFS',GetVolumeFileSystem(Drive));
-  end;
-
-// file systems capable to keep files > 4GB
-function IsExtFs (const Drive : string) : boolean;
-var
-  s : string;
-begin
-  s:=GetVolumeFileSystem(Drive);
-  Result:=AnsiSameText('NTFS',s) or AnsiSameText('exFAT',s) or AnsiSameText('LTFS',s);
-  end;
-
-{ TODO -cHelp : Donator (incl. TFileSystemFlag[s]): Robert Rossmair }
-
-function GetVolumeFileSystemFlags(const Volume: string): TFileSystemFlags;
-const
-  FileSystemFlags: array [TFileSystemFlag] of DWORD =
-    ( FILE_CASE_SENSITIVE_SEARCH,   // fsCaseSensitive
-      FILE_CASE_PRESERVED_NAMES,    // fsCasePreservedNames
-      FILE_UNICODE_ON_DISK,         // fsSupportsUnicodeOnDisk
-      FILE_PERSISTENT_ACLS,         // fsPersistentACLs
-      FILE_FILE_COMPRESSION,        // fsSupportsFileCompression
-      FILE_VOLUME_QUOTAS,           // fsSupportsVolumeQuotas
-      FILE_SUPPORTS_SPARSE_FILES,   // fsSupportsSparseFiles
-      FILE_SUPPORTS_REPARSE_POINTS, // fsSupportsReparsePoints
-      FILE_SUPPORTS_REMOTE_STORAGE, // fsSupportsRemoteStorage
-      FILE_VOLUME_IS_COMPRESSED,    // fsVolumeIsCompressed
-      FILE_SUPPORTS_OBJECT_IDS,     // fsSupportsObjectIds
-      FILE_SUPPORTS_ENCRYPTION,     // fsSupportsEncryption
-      FILE_NAMED_STREAMS,           // fsSupportsNamedStreams
-      FILE_READ_ONLY_VOLUME         // fsVolumeIsReadOnly
-    );
-var
-  MaximumComponentLength, Flags: Cardinal;
-  Flag: TFileSystemFlag;
-begin
-  if not GetVolumeInformation(PChar(IncludeTrailingPathDelimiter(Volume)), nil, 0, nil,
-    MaximumComponentLength, Flags, nil, 0) then
-    RaiseLastOSError;
-  Result:=[];
-  for Flag:=Low(TFileSystemFlag) to High(TFileSystemFlag) do
-    if (Flags and FileSystemFlags[Flag]) <> 0 then
-      Include(Result, Flag);
-end;
-
-function GetVolumeUniqueName(const Drive : string) : string;
-var
-  uname : array [0..MAX_PATH] of Char;
-begin
-  if (length(Drive)>0) and GetVolumeNameForVolumeMountPoint(PChar(Drive),uname,MAX_PATH+1) then
-    Result:=uname
-  else Result:='';
-  end;
-
-{ ---------------------------------------------------------------- }
 (* Disk size and free space *)
-
 function GetDiskFree (const Path : string) : int64 ;
 var
   n : Int64;
@@ -1038,7 +842,7 @@ var
   p    : pchar;
   size : dword;
 begin
-size:=1024;
+  size:=1024;
   p:=StrAlloc(size);
   if ExpandEnvironmentStrings('%ALLUSERSPROFILE%',p,size)=0 then Result:=WindowsDirectory
   else Result:=p;
@@ -1444,75 +1248,79 @@ var
   FLsaFreeReturnBuffer : TLsaFreeReturnBuffer;            // ab Win 2000
 begin
   result:=false;
-  Secur32Handle:=LoadLibrary(secur32);
-  if Secur32Handle=0 then Exit;
-  FLsaEnumerateLogonSessions:=GetProcAddress(Secur32Handle,'LsaEnumerateLogonSessions');
-  if not assigned(FLsaEnumerateLogonSessions) then Exit;
-  FLsaGetLogonSessionData:=GetProcAddress(Secur32Handle,'LsaGetLogonSessionData');
-  if not assigned(FLsaGetLogonSessionData) then Exit;
-  FLsaFreeReturnBuffer:=GetProcAddress(Secur32Handle,'LsaFreeReturnBuffer');
-  if not assigned(FLsaFreeReturnBuffer) then Exit;
-  Wtsapi32Handle:=LoadLibrary(wtsapi32);
-  if Wtsapi32Handle=0 then Exit;
-  FWTSQuerySessionInformation:=GetProcAddress(Wtsapi32Handle,'WTSQuerySessionInformationW');
-  if not assigned(FWTSQuerySessionInformation) then Exit;
-  DllHandle:=GetModuleHandle(kernel32);
-  if DllHandle=0 then Exit;
-  FWTSGetActiveConsoleSessionId:=GetProcAddress(DllHandle,'WTSGetActiveConsoleSessionId');
-  if not assigned(FWTSGetActiveConsoleSessionId) then Exit;
-  //Auflisten der LogOnSessions
   try
-    if (LsaNtStatusToWinError(FLsaEnumerateLogonSessions(Count,SessionList))=0) then begin
-      Luid:=SessionList;
-      if Count > 0 then repeat
-        // Prüfe auf mögliche Fehler (z.B. Access denied)
-        if LsaNtStatusToWinError(FLsaGetLogonSessionData(Luid,PSesDat))=0 then begin
-          // Prüfe, ob es sich um eine Konsolen- oder Remote-Anmeldung handelt
-          if (PSesDat^.LogonType=Interactive) or (PSesDat^.LogonType=RemoteInteractive) then begin
-            SizeNeeded:=MAX_PATH;
-            SizeNeeded2:= MAX_PATH;
-            GetMem(OwnerName, MAX_PATH);
-            GetMem(DomainName, MAX_PATH);
-            try
-              if LookupAccountSID(nil, PSesDat^.SID, OwnerName,SizeNeeded,DomainName,SizeNeeded2,
-                              OwnerType) then begin
-                // Prüfen ob es sich um einen Benutzer handelt und ob es die
-                // SessionId des aufrufenden Prozesses ist
-                if (OwnerType=1) and ProcessIdToSessionId(GetCurrentProcessId,sid)
-                    and(PSesDat^.Session=sid) then begin
-                  if FWTSQuerySessionInformation(WTS_CURRENT_SERVER_HANDLE,
-                      PSesDat^.Session, WTSConnectState,pBuffer,pBytesreturned) then begin
-                    if WTS_CONNECTSTATE_CLASS(pBuffer^) = WTSActive then with SessionData do begin
-                      UserLuid:=Luid^;
-                      UserName:=PSesDat^.UserName.Buffer;
-                      Domain:=PSesDat^.LogonDomain.Buffer;
-                      LogonType:=PSesDat^.LogonType;
-                      LogonTime:=Now;
-                      if FileTimeToLocalFileTime(TFileTime(PSesDat^.LogonTime),LocalFileTime) then
-                        LogonTime:=FileTimeToDateTime(LocalFileTime);
-                      result:=true;
+    Secur32Handle:=LoadLibrary(secur32);
+    if Secur32Handle=0 then Exit;
+    FLsaEnumerateLogonSessions:=GetProcAddress(Secur32Handle,'LsaEnumerateLogonSessions');
+    if not assigned(FLsaEnumerateLogonSessions) then Exit;
+    FLsaGetLogonSessionData:=GetProcAddress(Secur32Handle,'LsaGetLogonSessionData');
+    if not assigned(FLsaGetLogonSessionData) then Exit;
+    FLsaFreeReturnBuffer:=GetProcAddress(Secur32Handle,'LsaFreeReturnBuffer');
+    if not assigned(FLsaFreeReturnBuffer) then Exit;
+    Wtsapi32Handle:=LoadLibrary(wtsapi32);
+    if Wtsapi32Handle=0 then Exit;
+    FWTSQuerySessionInformation:=GetProcAddress(Wtsapi32Handle,'WTSQuerySessionInformationW');
+    if not assigned(FWTSQuerySessionInformation) then Exit;
+    DllHandle:=GetModuleHandle(kernel32);
+    if DllHandle=0 then Exit;
+    FWTSGetActiveConsoleSessionId:=GetProcAddress(DllHandle,'WTSGetActiveConsoleSessionId');
+    if not assigned(FWTSGetActiveConsoleSessionId) then Exit;
+    //Auflisten der LogOnSessions
+    try
+      if (LsaNtStatusToWinError(FLsaEnumerateLogonSessions(Count,SessionList))=0) then begin
+        Luid:=SessionList;
+        if Count > 0 then repeat
+          // Prüfe auf mögliche Fehler (z.B. Access denied)
+          if LsaNtStatusToWinError(FLsaGetLogonSessionData(Luid,PSesDat))=0 then begin
+            // Prüfe, ob es sich um eine Konsolen- oder Remote-Anmeldung handelt
+            if (PSesDat^.LogonType=Interactive) or (PSesDat^.LogonType=RemoteInteractive) then begin
+              SizeNeeded:=MAX_PATH;
+              SizeNeeded2:= MAX_PATH;
+              GetMem(OwnerName, MAX_PATH);
+              GetMem(DomainName, MAX_PATH);
+              try
+                if LookupAccountSID(nil, PSesDat^.SID, OwnerName,SizeNeeded,DomainName,SizeNeeded2,
+                                OwnerType) then begin
+                  // Prüfen ob es sich um einen Benutzer handelt und ob es die
+                  // SessionId des aufrufenden Prozesses ist
+                  if (OwnerType=1) and ProcessIdToSessionId(GetCurrentProcessId,sid)
+                      and(PSesDat^.Session=sid) then begin
+                    if FWTSQuerySessionInformation(WTS_CURRENT_SERVER_HANDLE,
+                        PSesDat^.Session, WTSConnectState,pBuffer,pBytesreturned) then begin
+                      if WTS_CONNECTSTATE_CLASS(pBuffer^) = WTSActive then with SessionData do begin
+                        UserLuid:=Luid^;
+                        UserName:=PSesDat^.UserName.Buffer;
+                        Domain:=PSesDat^.LogonDomain.Buffer;
+                        LogonType:=PSesDat^.LogonType;
+                        LogonTime:=Now;
+                        if FileTimeToLocalFileTime(TFileTime(PSesDat^.LogonTime),LocalFileTime) then
+                          LogonTime:=FileTimeToDateTime(LocalFileTime);
+                        result:=true;
+                        end;
                       end;
+                    FLSAFreeReturnBuffer(pBuffer);
                     end;
-                  FLSAFreeReturnBuffer(pBuffer);
                   end;
+              finally
+                FreeMem(OwnerName);
+                FreeMem(DomainName);
                 end;
-            finally
-              FreeMem(OwnerName);
-              FreeMem(DomainName);
               end;
             end;
-          end;
-        inc(Luid);
-        dec(Count);
-        try
-          FLSAFreeReturnBuffer(PSesDat);
-        except
-          end;
-        until (Count=0) or result;
-      end;
+          inc(Luid);
+          dec(Count);
+          try
+            FLSAFreeReturnBuffer(PSesDat);
+          except
+            end;
+          until (Count=0) or result;
+        end;
+    finally
+      FLSAFreeReturnBuffer(SessionList);
+      end
   finally
-    FLSAFreeReturnBuffer(SessionList);
-    FreeLibrary(Wtsapi32Handle); FreeLibrary(Secur32Handle);
+    try FreeLibrary(Wtsapi32Handle); except end;
+    try FreeLibrary(Secur32Handle); except end;
     end;
   end;
 
@@ -1549,6 +1357,64 @@ begin
       end;
     end
   else Result:=true;
+  end;
+
+function GetUserLogonType (const Username : string) : TSecurityLogonType;
+var
+  ss : string;
+  Count: cardinal;
+  SessionList,Luid: PLUID;
+  PSesDat: PSecurityLogonSessionData;
+  Secur32Handle : THandle;
+  FLsaEnumerateLogonSessions : TLsaEnumerateLogonSessions; // ab Win XP
+  FLsaGetLogonSessionData : TLsaGetLogonSessionData;      // ab Win 2000
+  FLsaFreeReturnBuffer : TLsaFreeReturnBuffer;            // ab Win 2000
+begin
+  Result:=seltError;
+  try
+    Secur32Handle:=LoadLibrary(secur32);
+    if Secur32Handle=0 then Exit;
+    FLsaEnumerateLogonSessions:=GetProcAddress(Secur32Handle,'LsaEnumerateLogonSessions');
+    if not assigned(FLsaEnumerateLogonSessions) then Exit;
+    FLsaGetLogonSessionData:=GetProcAddress(Secur32Handle,'LsaGetLogonSessionData');
+    if not assigned(FLsaGetLogonSessionData) then Exit;
+    FLsaFreeReturnBuffer:=GetProcAddress(Secur32Handle,'LsaFreeReturnBuffer');
+    if not assigned(FLsaFreeReturnBuffer) then Exit;
+    try
+      if (LsaNtStatusToWinError(FLsaEnumerateLogonSessions(Count,SessionList))=0) then begin
+        Luid:=SessionList;
+        if Count > 0 then repeat
+          // Prüfe auf mögliche Fehler (z.B. Access denied)
+          if LsaNtStatusToWinError(FLsaGetLogonSessionData(Luid,PSesDat))=0 then begin
+            if AnsiSameText(Username,PSesDat^.UserName.Buffer) then Result:=PSesDat^.LogonType;
+            end;
+          inc(Luid);
+          dec(Count);
+          try
+            FLSAFreeReturnBuffer(PSesDat);
+          except
+            end;
+          until (Count<=0) or (Result<>seltError);
+        end
+    finally
+      FLSAFreeReturnBuffer(SessionList);
+      end;
+  finally
+    try FreeLibrary(Secur32Handle); except end;
+    end;
+  end;
+
+function IsInteractiveUser (const Username : string) : boolean;
+var
+  lt : TSecurityLogonType;
+begin
+  lt:=GetUserLogonType(UserName);
+  Result:=(lt=Interactive) or (lt=RemoteInteractive);
+  end;
+
+function IsBatchUser (const Username : string) : boolean;
+begin
+  Result:=GetUserLogonType(UserName)=Batch;
   end;
 
 { ---------------------------------------------------------------- }
@@ -1680,45 +1546,48 @@ var
   FLsaFreeReturnBuffer : TLsaFreeReturnBuffer;            // ab Win 2000
 begin
   Result:=false;
-  Secur32Handle:=LoadLibrary(secur32);
-  if Secur32Handle=0 then Exit;
-  FLsaEnumerateLogonSessions:=GetProcAddress(Secur32Handle,'LsaEnumerateLogonSessions');
-  if not assigned(FLsaEnumerateLogonSessions) then Exit;
-  FLsaGetLogonSessionData:=GetProcAddress(Secur32Handle,'LsaGetLogonSessionData');
-  if not assigned(FLsaGetLogonSessionData) then Exit;
-  FLsaFreeReturnBuffer:=GetProcAddress(Secur32Handle,'LsaFreeReturnBuffer');
-  if not assigned(FLsaFreeReturnBuffer) then Exit;
-  // Get LUIDs from running processes
-  if GetLUIDsFromProcesses(GetCurrentProcessId,ProcSessions)<>NO_ERROR then Exit;
-  // Enumerate LogOnSessions
   try
-    if (LsaNtStatusToWinError(FLsaEnumerateLogonSessions(Count,SessionList))=0) then begin
-      Luid:=SessionList;
-      for i:=0 to Count-1 do begin
-        // Prüfe auf mögliche Fehler (z.B. Access denied)
-        if LsaNtStatusToWinError(FLsaGetLogonSessionData(Luid,PSesDat))=0 then begin
-          // Prüfe, ob es sich um eine Konsolen- oder Remote-Anmeldung handelt
-          if ((PSesDat^.LogonType=Interactive) or (PSesDat^.LogonType=RemoteInteractive))
-              and HasProcess(PSesDat^.LogonId,ProcSessions) then begin
-            setlength(UserSessions,length(UserSessions)+1);
-            with UserSessions[High(UserSessions)] do begin
-              UserLuid:=Luid^;
-              UserName:=PSesDat^.UserName.Buffer;
-              DOmain:=PSesDat^.LogonDomain.Buffer;
-              LogonType:=PSesDat^.LogonType;
-              LogonTime:=Now;
-              if FileTimeToLocalFileTime(TFileTime(PSesDat^.LogonTime),LocalFileTime) then
-                LogonTime:=FileTimeToDateTime(LocalFileTime);
-              Result:=true;
+    Secur32Handle:=LoadLibrary(secur32);
+    if Secur32Handle=0 then Exit;
+    FLsaEnumerateLogonSessions:=GetProcAddress(Secur32Handle,'LsaEnumerateLogonSessions');
+    if not assigned(FLsaEnumerateLogonSessions) then Exit;
+    FLsaGetLogonSessionData:=GetProcAddress(Secur32Handle,'LsaGetLogonSessionData');
+    if not assigned(FLsaGetLogonSessionData) then Exit;
+    FLsaFreeReturnBuffer:=GetProcAddress(Secur32Handle,'LsaFreeReturnBuffer');
+    if not assigned(FLsaFreeReturnBuffer) then Exit;
+    // Get LUIDs from running processes
+    if GetLUIDsFromProcesses(GetCurrentProcessId,ProcSessions)<>NO_ERROR then Exit;
+    // Enumerate LogOnSessions
+    try
+      if (LsaNtStatusToWinError(FLsaEnumerateLogonSessions(Count,SessionList))=0) then begin
+        Luid:=SessionList;
+        for i:=0 to Count-1 do begin
+          // Prüfe auf mögliche Fehler (z.B. Access denied)
+          if LsaNtStatusToWinError(FLsaGetLogonSessionData(Luid,PSesDat))=0 then begin
+            // Prüfe, ob es sich um eine Konsolen- oder Remote-Anmeldung handelt
+            if ((PSesDat^.LogonType=Interactive) or (PSesDat^.LogonType=RemoteInteractive))
+                and HasProcess(PSesDat^.LogonId,ProcSessions) then begin
+              setlength(UserSessions,length(UserSessions)+1);
+              with UserSessions[High(UserSessions)] do begin
+                UserLuid:=Luid^;
+                UserName:=PSesDat^.UserName.Buffer;
+                Domain:=PSesDat^.LogonDomain.Buffer;
+                LogonType:=PSesDat^.LogonType;
+                LogonTime:=Now;
+                if FileTimeToLocalFileTime(TFileTime(PSesDat^.LogonTime),LocalFileTime) then
+                  LogonTime:=FileTimeToDateTime(LocalFileTime);
+                Result:=true;
+                end;
               end;
             end;
+          inc(Luid);
+          try FLSAFreeReturnBuffer(PSesDat); except end;
           end;
-        inc(Luid);
-        try FLSAFreeReturnBuffer(PSesDat); except end;
         end;
+    finally
+      FLSAFreeReturnBuffer(SessionList);
       end;
   finally
-    FLSAFreeReturnBuffer(SessionList);
     FreeLibrary(Secur32Handle);
     end;
   end;
@@ -1788,9 +1657,10 @@ initialization
   if DllHandle<>0 then begin  // available in Vista and later
     @FFindFirstStream:=GetProcAddress(DllHandle,'FindFirstStreamW');
     @FFindNextStream:=GetProcAddress(DllHandle,'FindNextStreamW');
+    @FGetTickCount64:=GetProcAddress(DllHandle,'GetTickCount64');
     end
   else begin
-    FFindFirstStream:=nil; FFindNextStream:=nil;
+    FFindFirstStream:=nil; FFindNextStream:=nil; FGetTickCount64:=nil;
     end;
 
   end.
