@@ -5,6 +5,7 @@
    © Dr. J. Rathlev, D-24222 Schwentinental (kontakt(a)rathlev-home.de)
 
    The contents of this file may be used under the terms of the
+   Mozilla Public License ("MPL") or
    GNU Lesser General Public License Version 2 or later (the "LGPL")
 
    Software distributed under this License is distributed on an "AS IS" basis,
@@ -12,7 +13,7 @@
    the specific language governing rights and limitations under the License.
 
    Vers. 1 - Dec. 2016
-   last modified: May 2019
+   last modified: March 2020
    *)
 
 unit WinDevUtils;
@@ -79,7 +80,12 @@ type
     BusTypeMmc,
     BusTypeVirtual,
     BusTypeFileBackedVirtual,
-    BusTypeMax);
+    BusTypeSpaces,
+    BusTypeNvme,
+    BusTypeSCM,
+    BusTypeUfs,
+    BusTypeMax,
+    BusTypeMaxReserved);
   TBusType = STORAGE_BUS_TYPE;
 
   PStorageDeviceDescriptor = ^TStorageDeviceDescriptor;
@@ -105,14 +111,27 @@ type
     fsSupportsVolumeQuotas,     // The file system supports disk quotas.
     fsSupportsSparseFiles,      // The file system supports sparse files.
     fsSupportsReparsePoints,    // The file system supports reparse points.
-    fsSupportsRemoteStorage,    // ?
+    fsSupportsRemoteStorage,    // The file system supports remote storage.
+    fsReturnsCleanupInfo,       // The file system returns additional cleanup information.
+    fsPosixStyleOperation,      // The file system supports POSIX-style operations.
     fsVolumeIsCompressed,       // The specified volume is a compressed volume; for example, a DoubleSpace volume.
     fsSupportsObjectIds,        // The file system supports object identifiers.
     fsSupportsEncryption,       // The file system supports the Encrypted File System (EFS).
     fsSupportsNamedStreams,     // The file system supports named streams.
-    fsVolumeIsReadOnly          // The specified volume is read-only.
-                                //   Windows 2000/NT and Windows Me/98/95:  This value is not supported.
+    fsVolumeIsReadOnly,         // The specified volume is read-only.
+    fsSequentialWriteOnce,      // The specified volume can be written to one time only.
+    fsSupportsTransactions,     // The file system supports transactions.
+    fsSupportsHardlinks,        // The file system supports hard links.
+    fsExtendedAttributes,       // The file system supports extended attributes.
+    fsOpenByFileId,             // The file system supports open by file ID.
+    fsSupportsUSNJournal,       // The file system supports update sequence number (USN) journals.
+    fsIntegrityStreams,         // The file system supports integrity streams.
+    fsBlockCloning,             // The file system supports block cloning.
+    fsSparseVDL,                // The file system uses sparse valid data length (VDL)
+    fsDirectAccessVolume,       // The specified volume is a direct access (DAX) volume.
+    fsGhosting                  // The file system supports ghosting.
    );
+
 
   TFileSystemFlags = set of TFileSystemFlag;
 
@@ -121,12 +140,70 @@ const
     ('Unknown','Not mounted','Removable','Fixed','Remote','CD/DVD','Ramdisk');
   BusNames : array [TBusType] of string =
     ('Unknown','SCSI','Atapi', 'ATA','IEEE1394','SSA','Fiber channel','USB','RAID',
-     'iSCSI','SCSI (SAS)','SATA','SD','MMC','Virtual','File-backed virtual','Unknown');
+     'iSCSI','SCSI (SAS)','SATA','SD','MMC','Virtual','File-backed virtual',
+     'Spaces','Nvme','SCM','Ufs','Unknown','Unknown');
+  FileSystemFlagDesc : array [TFileSystemFlag] of string =
+    ('Supports case-sensitive file names',
+     'Preserves the case of file names',
+     'Supports Unicode in file names',
+     'Preserves and enforces ACLs',
+     'Supports file-based compression',
+     'Supports disk quotas',
+     'Supports sparse files',
+     'Supports reparse points',
+     'Supports remote storage',
+     'Returns additional cleanup information',
+     'Supports POSIX-style operations',
+     'Is a compressed volume',
+     'Supports object identifiers',
+     'Supports the Encrypted File System (EFS)',
+     'Supports named streams',
+     'Is read-only',
+     'Can be written to one time only',
+     'Supports transactions',
+     'Supports hard links',
+     'Supports extended attributes',
+     'Supports open by file ID',
+     'Supports USN journals',
+     'Supports integrity streams',
+     'Supports block cloning',
+     'Uses sparse valid data length (VDL)',
+     'Is a direct access (DAX) volume',
+     'Supports ghosting'
+    );
+{ Unterstützt die Groß-/Kleinschreibung von Dateinamen
+  Behält die Groß-/Kleinschreibung von Dateinamen
+  Unterstützt Unicode-Dateinamen
+  Behält und erzwingt Zugriffsteuerungslisten (ACL)
+  Unterstützt Datei-basierte Komprimierung
+  Unterstützt Datenträgerkontingente
+  Unterstützt Dateien mit geringer Datendichte
+  Unterstützt Analysepunkte
+  Unterstützt Remotespeicher
+  Gibt zusätzliche Ergebnisinformationen beim Aufräumen zurück
+  Unterstützt das Trennen und Umbenennen im POSIX-Stil
+  Ist ein komprimiertes Volume
+  Unterstützt Objektkennungen
+  Unterstützt EFS (verschlüsseltes Dateisystem)
+  Unterstützt benannte Streams
+  Nur Lesezugriff
+  Kann nur einmal beschrieben werden
+  Unterstützt Transaktionen
+  Unterstützt feste Links
+  Unterstützt erweiterte Attribute
+  Unterstützt das Öffnen nach Datei-ID.
+  Mit USN-Journal-Unterstützung
+  Unterstützt Integritätsdatenströme
+  Unterstützt das Klonen von Blöcken
+  Benutzt sparse valid data length (VDL)
+  Unterstützt direkten Zugriff (DAX)
+  Unterstützt Ghosting
+}
 
 // Typ eines Laufwerkes ermitteln
 function DriveType (const Path : string) : TDriveType;
 
-// Typ eines Pfades ermitteln (siehe TPathtype)
+// Typ eines Pfades ermitteln (siehe TPathType)
 function CheckPath (const Path : string) : TPathType;
 
 // Removable oder Fixed
@@ -149,9 +226,6 @@ function GetDriveForVolume (const VolName : string; var DriveName : string;
   OnlyMounted : boolean = false) : integer;
 function DriveForVolume (const VolName : string; OnlyMounted : boolean = false) : string;
 
-function PathIsAvailable (const Path : string) : boolean;
-function CheckForWritablePath (const Path : string) : boolean;
-
 function GetStorageProperty (const Drive : string; var StorageProperty : TStorageDeviceDescriptor) : boolean;
 function GetBusType (const Drive : string) : TBusType;
 function IsRemovableDrive (const Drive : string) : boolean;
@@ -167,6 +241,7 @@ function IsExFat (const Drive : string) : boolean;
 function IsLtfs (const Drive : string) : boolean;
 function IsExtFs (const Drive : string) : boolean; // file systems capable to keep files > 4GB
 
+function GetFileSystemAttributes(Flags: Cardinal) : TFileSystemFlags;
 function GetVolumeFileSystemFlags(const Volume: string): TFileSystemFlags;
 function GetVolumeUniqueName(const Drive : string) : string;
 
@@ -203,6 +278,15 @@ function FindNextVolumeMountPoint(hFindVolumeMountPoint: THandle;
 implementation
 
 uses UnitConsts, WinApiUtils;
+
+const
+  FILE_RETURNS_CLEANUP_RESULT_INFO   = $00000200;
+  FILE_SUPPORTS_POSIX_UNLINK_RENAME  = $00000400;
+  FILE_SUPPORTS_INTEGRITY_STREAMS    = $04000000;
+  FILE_SUPPORTS_BLOCK_REFCOUNTING    = $08000000;
+  FILE_SUPPORTS_SPARSE_VDL           = $10000000;
+  FILE_DAX_VOLUME                    = $20000000;
+  FILE_SUPPORTS_GHOSTING             = $40000000;
 
 // Typ eines Laufwerkes ermitteln
 function DriveType (const Path : string) : TDriveType;
@@ -257,8 +341,6 @@ begin
   end;
 
 function IsSystemDrive (const Path : string) : boolean;
-var
-  sd : string;
 var
   p : pchar;
 begin
@@ -336,8 +418,7 @@ begin
 function GetDriveForVolume (const VolName : string; var DriveName : string;
   OnlyMounted : boolean = false) : integer;
 var
-  VolHandle,
-  MountHandle : THandle;
+  VolHandle   : THandle;
   Buf         : array [0..MAX_PATH+1] of Char;
   VolumeId,
   VName       : string;
@@ -380,39 +461,6 @@ begin
 function DriveForVolume (const VolName : string; OnlyMounted : boolean = false) : string;
 begin
   GetDriveForVolume(VolName,Result,OnlyMounted);
-  end;
-
-function PathIsAvailable (const Path : string) : boolean;
-var
-  n,m : int64;
-begin
-  Result:=GetDiskFreeSpaceEx(pchar(IncludeTrailingPathDelimiter(Path)),n,m,nil);
-  end;
-
-const
-  TestName = 'test.tmp';
-
-// Prüfen, ob in einen Pfad geschrieben werden kann
-function CheckForWritablePath (const Path : string) : boolean;
-var
-  fsT      : TextFile;
-  s        : string;
-  nd       : boolean;
-begin
-  Result:=DirectoryExists(Path);
-  nd:=not Result;
-  if nd then Result:=ForceDirectories(Path);  // versuche Pfad zu erstellen
-  if Result then begin
-    s:=IncludeTrailingPathDelimiter(Path)+TestName;
-    AssignFile (fsT,s);
-    {$I-} Rewrite(fsT); {$I+}
-    Result:=IoResult=0;
-    if Result then begin
-      CloseFile(fsT);
-      DeleteFile(s);
-      end;
-    if nd then RemoveDir(Path);
-    end;
   end;
 
 function GetStorageProperty (const Drive : string; var StorageProperty : TStorageDeviceDescriptor) : boolean;
@@ -463,7 +511,7 @@ var
   MaximumComponentLength: DWORD;
   Flags: DWORD;
   Name: array [0..MAX_PATH] of Char;
-  FileSystem: array [0..15] of Char;
+  FileSystem: array [0..MAX_PATH] of Char;
   ErrorMode: Cardinal;
   DriveStr: string;
 begin
@@ -545,36 +593,55 @@ begin
   Result:=AnsiSameText('NTFS',s) or AnsiSameText('exFAT',s) or AnsiSameText('LTFS',s);
   end;
 
-function GetVolumeFileSystemFlags(const Volume: string): TFileSystemFlags;
+function GetFileSystemAttributes (Flags: Cardinal) : TFileSystemFlags;
+var
+  Flag: TFileSystemFlag;
 const
   FileSystemFlags: array [TFileSystemFlag] of DWORD =
-    ( FILE_CASE_SENSITIVE_SEARCH,   // fsCaseSensitive
-      FILE_CASE_PRESERVED_NAMES,    // fsCasePreservedNames
-      FILE_UNICODE_ON_DISK,         // fsSupportsUnicodeOnDisk
-      FILE_PERSISTENT_ACLS,         // fsPersistentACLs
-      FILE_FILE_COMPRESSION,        // fsSupportsFileCompression
-      FILE_VOLUME_QUOTAS,           // fsSupportsVolumeQuotas
-      FILE_SUPPORTS_SPARSE_FILES,   // fsSupportsSparseFiles
-      FILE_SUPPORTS_REPARSE_POINTS, // fsSupportsReparsePoints
-      FILE_SUPPORTS_REMOTE_STORAGE, // fsSupportsRemoteStorage
-      FILE_VOLUME_IS_COMPRESSED,    // fsVolumeIsCompressed
-      FILE_SUPPORTS_OBJECT_IDS,     // fsSupportsObjectIds
-      FILE_SUPPORTS_ENCRYPTION,     // fsSupportsEncryption
-      FILE_NAMED_STREAMS,           // fsSupportsNamedStreams
-      FILE_READ_ONLY_VOLUME         // fsVolumeIsReadOnly
+    ( FILE_CASE_SENSITIVE_SEARCH,        // fsCaseSensitive
+      FILE_CASE_PRESERVED_NAMES,         // fsCasePreservedNames
+      FILE_UNICODE_ON_DISK,              // fsSupportsUnicodeOnDisk
+      FILE_PERSISTENT_ACLS,              // fsPersistentACLs
+      FILE_FILE_COMPRESSION,             // fsSupportsFileCompression
+      FILE_VOLUME_QUOTAS,                // fsSupportsVolumeQuotas
+      FILE_SUPPORTS_SPARSE_FILES,        // fsSupportsSparseFiles
+      FILE_SUPPORTS_REPARSE_POINTS,      // fsSupportsReparsePoints
+      FILE_SUPPORTS_REMOTE_STORAGE,      // fsSupportsRemoteStorage
+      FILE_RETURNS_CLEANUP_RESULT_INFO,  // fsReturnsCleanupInfo
+      FILE_SUPPORTS_POSIX_UNLINK_RENAME, // fsPosixStyleOperation
+      FILE_VOLUME_IS_COMPRESSED,         // fsVolumeIsCompressed
+      FILE_SUPPORTS_OBJECT_IDS,          // fsSupportsObjectIds
+      FILE_SUPPORTS_ENCRYPTION,          // fsSupportsEncryption
+      FILE_NAMED_STREAMS,                // fsSupportsNamedStreams
+      FILE_READ_ONLY_VOLUME,             // fsVolumeIsReadOnly
+      FILE_SEQUENTIAL_WRITE_ONCE,        // fsSequentialWriteOnce
+      FILE_SUPPORTS_TRANSACTIONS,        // fsSupportsTransactions
+      FILE_SUPPORTS_HARD_LINKS,          // fsSupportsHardlinks
+      FILE_SUPPORTS_EXTENDED_ATTRIBUTES, // fsExtendedAttributes
+      FILE_SUPPORTS_OPEN_BY_FILE_ID,     // fsOpenByFileId
+      FILE_SUPPORTS_USN_JOURNAL,         // fsSupportsUSNJournal
+      FILE_SUPPORTS_INTEGRITY_STREAMS,   // fsIntegrityStreams
+      FILE_SUPPORTS_BLOCK_REFCOUNTING,   // fsBlockCloning
+      FILE_SUPPORTS_SPARSE_VDL,          // fsSparseVDL
+      FILE_DAX_VOLUME,                   // fsDirectAccessVolume
+      FILE_SUPPORTS_GHOSTING             // fsGhosting
     );
-var
-  MaximumComponentLength, Flags: Cardinal;
-  Flag: TFileSystemFlag;
 begin
-  if not GetVolumeInformation(PChar(IncludeTrailingPathDelimiter(Volume)), nil, 0, nil,
-    MaximumComponentLength, Flags, nil, 0) then
-    RaiseLastOSError;
   Result:=[];
   for Flag:=Low(TFileSystemFlag) to High(TFileSystemFlag) do
     if (Flags and FileSystemFlags[Flag]) <> 0 then
       Include(Result, Flag);
-end;
+  end;
+
+function GetVolumeFileSystemFlags(const Volume: string) : TFileSystemFlags;
+var
+  MaximumComponentLength, Flags: Cardinal;
+begin
+  if not GetVolumeInformation(PChar(IncludeTrailingPathDelimiter(Volume)), nil, 0, nil,
+    MaximumComponentLength, Flags, nil, 0) then
+    RaiseLastOSError;
+  Result:=GetFileSystemAttributes(Flags);
+  end;
 
 function GetVolumeUniqueName(const Drive : string) : string;
 var

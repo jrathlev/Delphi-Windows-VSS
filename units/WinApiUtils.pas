@@ -23,7 +23,7 @@
    Vers. 6 - July 2013 : more environment folders
    Vers. 7 - Dec. 2015 : Modifications for Delphi 10 (all functions and constants
                          removed that are now handled in Winapi.Windows)
-   last modified:  March 2019
+   last modified:  June 2020
    *)
 
 unit WinApiUtils;
@@ -323,6 +323,9 @@ type
 
   TGetTickCount64 = function : ULONGLONG; stdcall;
 
+  TQueryFullProcessImageName = function (hProcess : THandle; dwFlags : DWORD;
+    lpExeName : LPWSTR; var lpdwSize : DWORD) : boolean; stdcall;
+
   TSetSuspendState = function (Hibernate, ForceCritical, DisableWakeEvent: BOOL) : BOOL; stdcall;
 
   TCreateProcessWithLogonW = function(lpUsername: PWideChar;
@@ -359,6 +362,17 @@ type
     LogonTime : TDateTime;
     end;
   TSessionList = array of TSessionData;
+
+  TDependencies = record
+    Groups,Services : string;
+    end;
+
+  TServiceConfig = record
+    ServiceType,StartType,ErrorControl,TagId : cardinal;
+    BinaryPathName,LoadOrderGroup,
+    ServiceStartName,DisplayName : string;
+    Dependencies : TDependencies;
+    end;
 
 
 //{$EXTERNALSYM GetTickCount64}
@@ -429,6 +443,8 @@ function GetDiskTotal (const Path : string) : int64;
 function IsWinNT : boolean;
 function IsWin2000 : boolean;
 function IsVista : boolean;
+function IsWindows8 : boolean;
+function IsWindows10 : boolean;
 function IsWindows64 : boolean;
 function Is64BitApp : boolean;
 
@@ -479,7 +495,7 @@ function IsPowerUserLoggedOn : boolean;
 
 { ---------------------------------------------------------------- }
 // prüfe, ob eine Exe-Datei gerade läuft
-function IsExeRunning(const AExeName: string): boolean;
+function IsExeRunning(const AExeName: string; FullPath : boolean = false): boolean;
 
 // Liste aller laufenden und sichtbaren Programme
 function GetProgramList(const List: TStrings): Boolean;
@@ -508,6 +524,11 @@ function GetInteractiveUserSessions (var UserSessions : TSessionList) : boolean;
 function GetInteractiveUserSessionCount : integer;
 
 { ---------------------------------------------------------------- }
+//  Get service configuration
+function GetServiceConfiguration (const AMachine,AServicename : string;
+                                  var ServiceConfig : TServiceConfig) : integer;
+
+{ ---------------------------------------------------------------- }
 // Modify privilege of calling process
 function ModifyPrivilege (const PrivilegeName : string; Enable : boolean) : boolean;
 
@@ -517,7 +538,7 @@ function KillProcessByWinHandle(WinHandle : Hwnd) : boolean;
 
 implementation
 
-uses System.StrUtils, System.DateUtils, WinApi.TlHelp32, WinApi.PsAPI;
+uses System.StrUtils, System.DateUtils, WinApi.TlHelp32, WinApi.PsAPI, WinApi.WinSvc;
 
 const
   InfoNum = 12;
@@ -532,6 +553,7 @@ var
   FFindFirstStream : TFindFirstStream;                 // erst ab Vista
   FFindNextStream : TFindNextStream;                   // erst ab Vista
   FGetTickCount64 : TGetTickCount64;
+  FQueryFullProcessImageName : TQueryFullProcessImageName;
 
 { ---------------------------------------------------------------- }
 function GetFileSizeEx; external kernel32 name 'GetFileSizeEx';
@@ -881,6 +903,16 @@ begin
   Result:=(Win32Platform=VER_PLATFORM_WIN32_NT) and (Win32MajorVersion>=6);
   end;
 
+function IsWindows8 : boolean;
+begin
+  Result:=(Win32Platform=VER_PLATFORM_WIN32_NT) and (Win32MajorVersion>=6) and (Win32MinorVersion>=2);
+  end;
+
+function IsWindows10 : boolean;
+begin
+  Result:=(Win32Platform=VER_PLATFORM_WIN32_NT) and (Win32MajorVersion>=10);
+  end;
+
 function IsWindows64 : boolean;
 var
   KernelModule: HMODULE;
@@ -1149,19 +1181,62 @@ begin
   end;
 
 { ---------------------------------------------------------------- }
-// prüfe, ob eine Exe-Datei gerade läuft
-function IsExeRunning(const AExeName: string) : boolean;
+// prüfe, ob eine Exe-Datei gerade läuft (optional mit vollst. Pfad)
+function IsExeRunning(const AExeName: string; FullPath : boolean) : boolean;
 var
   h: THandle;
   p: TProcessEntry32;
+  sp : string;
+
+//  function GetFullPath (Id : dword) : string;
+//  var
+//    h  : THandle;
+//    p: TModuleEntry32;
+//  begin
+//    Result:='';
+//    p.dwSize:=SizeOf(p);
+//    h:=CreateToolHelp32Snapshot(TH32CS_SnapModule,Id);
+//    try
+//      if Module32First(h,p) then Result:=p.szExePath;
+//    finally
+//      CloseHandle(h);
+//      end;
+//    if (length(Result)=0) and IsWindows64 and Is64BitApp then begin // check 32-bit modules
+//      end;
+//    end;
+
+  function GetFullPath (Id : dword) : string;
+  var
+    hp   : dword;
+    sBuf : PWideChar;
+    n    : dword;
+  begin
+    Result:='';
+    hp:=OpenProcess(PROCESS_QUERY_INFORMATION,false,Id);
+    if hp<>0 then begin
+      n:=1024; sBuf:=StrAlloc(n);
+      if assigned(@FQueryFullProcessImageName) then begin
+        if FQueryFullProcessImageName(hp,0,sBuf,n) then begin
+          Result:=sBuf;
+          StrDispose(sBuf);
+          end
+        end;
+      CloseHandle(hp);
+      end;
+    end;
+
 begin
   Result:=False;
   p.dwSize:=SizeOf(p);
   h:=CreateToolHelp32Snapshot(TH32CS_SnapProcess, 0);
   try
-    Process32First(h, p);
-    repeat
-      Result:=AnsiSameText(AExeName,p.szExeFile);
+    if Process32First(h, p) then repeat
+      if FullPath then begin
+        if p.th32ProcessID>0 then sp:=GetFullPath(p.th32ProcessID)
+        else sp:='';
+        end
+      else sp:=p.szExeFile;
+      if length(sp)>0 then Result:=AnsiSameText(AExeName,sp);
     until Result or (not Process32Next(h, p));
   finally
     CloseHandle(h);
@@ -1197,7 +1272,7 @@ function GetProgramList(const List: TStrings) : Boolean;
   end;
 
 begin
-List.BeginUpdate;
+  List.BeginUpdate;
   try
     Result:=EnumWindows(@EnumWindowsProc, Integer(List));
   finally
@@ -1242,7 +1317,6 @@ var
   LocalFileTime: TFileTime;
   Secur32Handle,Wtsapi32Handle : THandle;
   FWTSQuerySessionInformation : TWTSQuerySessionInformation; // ab Win XP
-  FWTSGetActiveConsoleSessionId : TWTSGetActiveConsoleSessionId; // ab Win XP
   FLsaEnumerateLogonSessions : TLsaEnumerateLogonSessions; // ab Win XP
   FLsaGetLogonSessionData : TLsaGetLogonSessionData;      // ab Win 2000
   FLsaFreeReturnBuffer : TLsaFreeReturnBuffer;            // ab Win 2000
@@ -1261,10 +1335,6 @@ begin
     if Wtsapi32Handle=0 then Exit;
     FWTSQuerySessionInformation:=GetProcAddress(Wtsapi32Handle,'WTSQuerySessionInformationW');
     if not assigned(FWTSQuerySessionInformation) then Exit;
-    DllHandle:=GetModuleHandle(kernel32);
-    if DllHandle=0 then Exit;
-    FWTSGetActiveConsoleSessionId:=GetProcAddress(DllHandle,'WTSGetActiveConsoleSessionId');
-    if not assigned(FWTSGetActiveConsoleSessionId) then Exit;
     //Auflisten der LogOnSessions
     try
       if (LsaNtStatusToWinError(FLsaEnumerateLogonSessions(Count,SessionList))=0) then begin
@@ -1603,6 +1673,77 @@ begin
   end;
 
 { ---------------------------------------------------------------- }
+function GetServiceConfiguration (const AMachine,AServicename : string;
+                                  var ServiceConfig : TServiceConfig) : integer;
+var
+  ServiceHandle,SCMHandle : SC_Handle;
+  pServiceConfig : PQueryServiceConfig;
+  nSize, nBytesNeeded: DWord;
+
+  procedure GetDependencies (var ADeps : TDependencies);
+  var
+    pc : PChar;
+  begin
+    pc:=pServiceConfig^.lpDependencies;
+    with ADeps do begin
+      Groups:=''; Services:='';
+      if Assigned(pc) then begin
+        while pc^<>#0 do begin
+          if pc^=SC_GROUP_IDENTIFIER then begin
+            inc(pc);
+            if length(pc)>0 then begin
+              if length(Groups)>0 then Groups:=Groups+',';
+              Groups:=Groups+pc;
+              end;
+            end
+          else begin
+            if length(pc)>0 then begin
+              if length(Services)>0 then Services:=Services+',';
+              Services:=Services+pc;
+              end;
+            end;
+          Inc(pc,length(pc)+1);
+          end;
+        end;
+      end;
+    end;
+
+begin
+  Result:=NO_ERROR;
+  SCMHandle:=OpenSCManager(PChar(AMachine),nil,SC_MANAGER_CONNECT);
+  if SCMHandle<>0 then begin
+    try
+      ServiceHandle:=OpenService(SCMHandle,PChar(AServiceName),SERVICE_QUERY_CONFIG);
+      if ServiceHandle<>0 then begin
+        QueryServiceConfig(ServiceHandle,nil,0,nSize);
+        pServiceConfig := AllocMem(nSize);
+        try
+          if QueryServiceConfig(ServiceHandle,pServiceConfig,nSize,nBytesNeeded) then with ServiceConfig do begin
+            ServiceType:=pServiceConfig^.dwServiceType;
+            StartType:=pServiceConfig^.dwStartType;
+            ErrorControl:=pServiceConfig^.dwErrorControl;
+            TagId:=pServiceConfig^.dwTagId;
+            BinaryPathName:=pServiceConfig^.lpBinaryPathName;
+            LoadOrderGroup:=pServiceConfig^.lpLoadOrderGroup;
+            ServiceStartName:=pServiceConfig^.lpServiceStartName;
+            DisplayName:=pServiceConfig^.lpDisplayName;
+            GetDependencies(Dependencies);
+            end
+          else Result:=GetLastError;
+        finally
+          Dispose(pServiceConfig);
+          CloseServiceHandle(ServiceHandle);
+          end;
+        end
+      else Result:=GetLastError;
+    finally
+      CloseServiceHandle(SCMHandle);
+      end;
+    end
+  else Result:=GetLastError;
+  end;
+
+{ ---------------------------------------------------------------- }
 // Modify privilege of calling process
 function ModifyPrivilege (const PrivilegeName : string; Enable : boolean) : boolean;
 var
@@ -1658,9 +1799,11 @@ initialization
     @FFindFirstStream:=GetProcAddress(DllHandle,'FindFirstStreamW');
     @FFindNextStream:=GetProcAddress(DllHandle,'FindNextStreamW');
     @FGetTickCount64:=GetProcAddress(DllHandle,'GetTickCount64');
+    @FQueryFullProcessImageName:=GetProcAddress(DllHandle,'QueryFullProcessImageNameW');
     end
   else begin
     FFindFirstStream:=nil; FFindNextStream:=nil; FGetTickCount64:=nil;
+    FQueryFullProcessImageName:=nil;
     end;
 
   end.
