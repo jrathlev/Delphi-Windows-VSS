@@ -267,6 +267,10 @@ function FindFirstVolume(lpszVolumeName: LPWSTR; cchBufferLength: DWORD): THandl
 function FindNextVolume(hFindVolume: THandle; lpszVolumeName: LPWSTR;
   cchBufferLength: DWORD): BOOL; stdcall;
 
+// missing in Delphi XE2 Winapi.Windows
+{$EXTERNALSYM FindVolumeClose}
+function FindVolumeClose(hFindVolume: THandle): BOOL; stdcall;
+
 {$EXTERNALSYM FindFirstVolumeMountPoint}
 function FindFirstVolumeMountPoint(lpszRootPathName: LPCWSTR;
   lpszVolumeMountPoint: LPWSTR; cchBufferLength: DWORD): THandle; stdcall;
@@ -660,6 +664,7 @@ function GetVolumePathNamesForVolumeName; external kernel32 name 'GetVolumePathN
 function GetVolumeNameForVolumeMountPoint; external kernel32 name 'GetVolumeNameForVolumeMountPointW';
 function FindFirstVolume; external kernel32 name 'FindFirstVolumeW';
 function FindNextVolume; external kernel32 name 'FindNextVolumeW';
+function FindVolumeClose; external kernel32 name 'FindVolumeCloseW';
 function FindFirstVolumeMountPoint; external kernel32 name 'FindFirstVolumeMountPointW';
 function FindNextVolumeMountPoint; external kernel32 name 'FindNextVolumeMountPointW';
 
